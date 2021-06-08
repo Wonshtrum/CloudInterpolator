@@ -4,7 +4,7 @@ This is a simple tool to interpolate N-dimensional data between two M-dimensiona
 
 ## Cloud2Cloud interface
 For structured meshes.
-````py
+```py
 result = cloud2cloud(source, values, target)
 
 source # ndarray(*shape_sce, dim_msh)
@@ -16,7 +16,7 @@ result # ndarray(*shape_tgt, *shape_val)
 
 ## Raw interface
 The underlying method used to interpolate.
-````py
+```py
 base = CloudInterpolator(source, target)
 result = base.interp(values)
 
