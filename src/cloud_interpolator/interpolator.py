@@ -8,11 +8,17 @@ class CloudInterpolator:
 		n_dim = len(source)
 		if n_dim != len(target):
 			pass #error "mismatch dims"
-		
-		source = np.stack(source, axis=1)
+
+		n_points = source[0].size
+		self.skipper = 1
+		if limitsize is not None and n_points > limitsize:
+			self.skipper = 1+(n_points-1)//limitsize
+
+		source = np.stack(source[:,::self.skipper], axis=1)
 		target = np.stack(target, axis=1)
 		kdtree = spatial.cKDTree(source)
 		dists, index = kdtree.query(target, k=stencil)
+
 		if function is not None:
 			dists[...] = function(dists)
 		dists[...] = np.reciprocal(np.maximum(dists, SMALL))
@@ -21,7 +27,7 @@ class CloudInterpolator:
 		self.index = index
 
 	def interp(self, data):
-		estimate = data[self.index]
+		estimate = data[::self.skipper,:][self.index]
 		estimate *= self.wheight.reshape(*self.wheight.shape, *[1]*(data.ndim-1))
 		return np.sum(estimate, axis=1)
 
@@ -57,4 +63,6 @@ def cloud2cloud(source_xyz, source_val, target_xyz, verbose=False, **kwargs):
 		print("new shp_val:", source_val.shape)
 
 	base = CloudInterpolator(source_xyz.T, target_xyz.T, **kwargs)
+	if verbose and base.skipper > 1:
+		print("skipper:", base.skipper)
 	return base.interp(source_val).reshape(*shp_tgt, *shp_val)
