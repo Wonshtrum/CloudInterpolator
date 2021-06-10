@@ -4,31 +4,39 @@ from scipy import spatial
 
 SMALL = 1e-16
 class CloudInterpolator:
-	def __init__(self, source, target, limitsize=10000, stencil=4, function=None):
+	def __init__(self, source, target, limitsource=None, stencil=4, function=None):
 		n_dim = len(source)
 		if n_dim != len(target):
+			print("Warning: source and target dim mismatch")
 			pass #error "mismatch dims"
 
 		n_points = source[0].size
 		self.skipper = 1
-		if limitsize is not None and n_points > limitsize:
-			self.skipper = 1+(n_points-1)//limitsize
+		if limitsource is not None and n_points > limitsource:
+			self.skipper = 1+(n_points-1)//limitsource
 
-		source = np.stack(source[:,::self.skipper], axis=1)
+		if isinstance(source, np.ndarray):
+			source = np.stack(source[:,::self.skipper], axis=1)
+		else:
+			source = np.stack([axe[::self.skipper] for axe in source], axis=1)
 		target = np.stack(target, axis=1)
 		kdtree = spatial.cKDTree(source)
-		dists, index = kdtree.query(target, k=stencil)
+		dists, self.index = kdtree.query(target, k=stencil)
+
+		if stencil == 1:
+			self.index = self.index[:,None]
+			self.weight = np.ones((self.index.size, 1))
+			return
 
 		if function is not None:
 			dists[...] = function(dists)
 		dists[...] = np.reciprocal(np.maximum(dists, SMALL))
 		dists /= np.sum(dists, axis=1)[:,None]
-		self.wheight = dists
-		self.index = index
+		self.weight = dists
 
 	def interp(self, data):
-		estimate = data[::self.skipper,:][self.index]
-		estimate *= self.wheight.reshape(*self.wheight.shape, *[1]*(data.ndim-1))
+		estimate = data[::self.skipper,...][self.index]
+		estimate *= self.weight.reshape(*self.weight.shape, *[1]*(data.ndim-1))
 		return np.sum(estimate, axis=1)
 
 
