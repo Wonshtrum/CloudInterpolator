@@ -1,4 +1,4 @@
-from cloud_interpolator import CloudInterpolator, cloud2cloud
+from cloud2cloud import CloudInterpolator, cloud2cloud
 import numpy as np
 
 

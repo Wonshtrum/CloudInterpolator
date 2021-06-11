@@ -1,8 +1,8 @@
-# CloudInterpolator
+# cloud2cloud
 This is a simple tool to interpolate N-dimensional data between two M-dimensional meshes as fast as possible.
 
 
-## Cloud2Cloud interface
+## cloud2cloud interface
 For structured meshes.
 ```py
 result = cloud2cloud(source, values, target)
