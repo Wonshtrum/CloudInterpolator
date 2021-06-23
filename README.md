@@ -21,8 +21,8 @@ The underlying method used to interpolate.
 base = CloudInterpolator(source, target)
 result = base.interp(values)
 
-source # ndarray(M, points_sce) or tuple(ndarray(points_sce),...)
-target # ndarray(M, points_tgt) or tuple(ndarray(points_tgt),...)
+source # ndarray(dim_msh, points_sce) or tuple(ndarray(points_sce),...)
+target # ndarray(dim_msh, points_tgt) or tuple(ndarray(points_tgt),...)
 values # ndarray(points_sce, *shape_val)
 result # ndarray(points_tgt, *shape_val)
 ```
