@@ -1,5 +1,6 @@
 # cloud2cloud
 This is a simple tool to interpolate N-dimensional data between two M-dimensional meshes as fast as possible.
+At any point of the target mesh the data is computed from K nearest neighbours in the source mesh.
 
 
 ## cloud2cloud interface
