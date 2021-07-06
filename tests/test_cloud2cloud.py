@@ -54,16 +54,24 @@ def test_cloud2cloud():
 def test_n_dimensional():
 	points_src = 100000
 	points_tgt = 1000
-	shp_val    = (3,4,5)
+	shp_val    = (2,3,4)
 	x,y,z = np.random.rand(3, points_src)
 	xi,yi,zi = np.random.rand(3, points_tgt)
 
-	data = np.random.rand(points_src, *shp_val)
+	data = np.repeat(np.hypot(x, z), np.prod(shp_val)).reshape(points_src, -1)
+	data_ref = np.repeat(np.hypot(xi, zi), np.prod(shp_val)).reshape(points_tgt, -1)
+	for i in range(np.prod(shp_val)):
+		data[:,i] += 1+i
+		data_ref[:,i] += 1+i
+	data = data.reshape(points_src, *shp_val)
+	data_ref = data_ref.reshape(points_tgt, *shp_val)
 
 	base = CloudInterpolator((x,y,z), (xi,yi,zi))
 	result = base.interp(data)
+	max_error = np.max(np.abs(result-data_ref))
 
 	assert result.shape == (points_tgt, *shp_val)
+	assert max_error < 1e-1
 
 
 def test_function():

@@ -1,10 +1,26 @@
+"""
+Interpolator
+============
+
+cloud2cloud implementation and API.
+"""
 import numpy as np
 from scipy import spatial
 
 
 SMALL = 1e-16
 class CloudInterpolator:
+	"""Wrapper around a source and target meshe to facilitate interpolation between the two."""
 	def __init__(self, source, target, limitsource=None, stencil=4, function=None):
+		"""
+		Initialisation
+
+		:param source: ndarray(dim_msh, points_sce) or tuple(ndarray(points_sce),...)
+		:param target: ndarray(dim_msh, points_tgt) or tuple(ndarray(points_tgt),...)
+		:param limitsource: the maximum number of points to use for the interpolation
+		:param stencil: the number of neighbours to use for the interpolation
+		:param function: determine the coefficient to give to each neighbours from their distance (default is linear)
+		"""
 		n_dim = len(source)
 		if n_dim != len(target):
 			print("Warning: source and target dim mismatch")
@@ -35,14 +51,30 @@ class CloudInterpolator:
 		self.weight = dists
 
 	def interp(self, data):
+		"""
+		Interpolate data bewteen the source and target meshes.
+
+		:param data: ndarray(points_sce, \*shape_val)
+		:returns: ndarray(points_tgt, \*shape_val)
+		"""
 		estimate = data[::self.skipper,...][self.index]
 		estimate *= self.weight.reshape(*self.weight.shape, *[1]*(data.ndim-1))
 		return np.sum(estimate, axis=1)
 
 
-def cloud2cloud(source_xyz, source_val, target_xyz, verbose=False, **kwargs):
-	*shp_sce, dim_sce = source_xyz.shape
-	*shp_tgt, dim_tgt = target_xyz.shape
+def cloud2cloud(source_msh, source_val, target_msh, verbose=False, **kwargs):
+	"""
+	Interpolate source_val between source_msh and target_msh.
+
+	:param source: ndarray(\*shape_sce, dim_msh)
+	:param target: ndarray(\*shape_tgt, dim_msh)
+	:param values: ndarray(\*shape_sce, \*shape_val)
+	:param verbose: if True print shape information
+	:param kwargs: key word arguments forwarded to CloudInterpolator
+	:returns: ndarray(\*shape_tgt, \*shape_val)
+	"""
+	*shp_sce, dim_sce = source_msh.shape
+	*shp_tgt, dim_tgt = target_msh.shape
 	shp_sce, shp_tgt = tuple(shp_sce), tuple(shp_tgt)
 	shp_val = source_val.shape[len(shp_sce):]
 	n_p_sce = np.prod(shp_sce)
@@ -62,15 +94,15 @@ def cloud2cloud(source_xyz, source_val, target_xyz, verbose=False, **kwargs):
 		print("n_points_tgt:", n_p_tgt)
 
 	source_val = source_val.reshape(n_p_sce, *shp_val)
-	source_xyz = source_xyz.reshape(n_p_sce, dim_sce)
-	target_xyz = target_xyz.reshape(n_p_tgt, dim_tgt)
+	source_msh = source_msh.reshape(n_p_sce, dim_sce)
+	target_msh = target_msh.reshape(n_p_tgt, dim_tgt)
 
 	if verbose:
-		print("new shp_sce:", source_xyz.shape)
-		print("new shp_tgt:", target_xyz.shape)
+		print("new shp_sce:", source_msh.shape)
+		print("new shp_tgt:", target_msh.shape)
 		print("new shp_val:", source_val.shape)
 
-	base = CloudInterpolator(source_xyz.T, target_xyz.T, **kwargs)
+	base = CloudInterpolator(source_msh.T, target_msh.T, **kwargs)
 	if verbose and base.skipper > 1:
 		print("skipper:", base.skipper)
 	return base.interp(source_val).reshape(*shp_tgt, *shp_val)
