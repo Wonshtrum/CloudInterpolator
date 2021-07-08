@@ -62,7 +62,7 @@ class CloudInterpolator:
 		return np.sum(estimate, axis=1)
 
 
-def cloud2cloud(source_msh, source_val, target_msh, verbose=False, **kwargs):
+def cloud2cloud(source_msh, source_val, target_msh, unroll_axis=None, verbose=False, **kwargs):
 	"""
 	Interpolate source_val between source_msh and target_msh.
 
@@ -90,8 +90,8 @@ def cloud2cloud(source_msh, source_val, target_msh, verbose=False, **kwargs):
 		print("shp_sce:", shp_sce)
 		print("shp_tgt:", shp_tgt)
 		print("shp_val:", shp_val)
-		print("n_points_sce:", n_p_sce)
-		print("n_points_tgt:", n_p_tgt)
+		print("n_p_sce:", n_p_sce)
+		print("n_p_tgt:", n_p_tgt)
 
 	source_val = source_val.reshape(n_p_sce, *shp_val)
 	source_msh = source_msh.reshape(n_p_sce, dim_sce)
@@ -105,4 +105,20 @@ def cloud2cloud(source_msh, source_val, target_msh, verbose=False, **kwargs):
 	base = CloudInterpolator(source_msh.T, target_msh.T, **kwargs)
 	if verbose and base.skipper > 1:
 		print("skipper:", base.skipper)
-	return base.interp(source_val).reshape(*shp_tgt, *shp_val)
+
+	if unroll_axis is None:
+		return base.interp(source_val).reshape(*shp_tgt, *shp_val)
+	else:
+		axis_size = shp_val[unroll_axis]
+		shp_partial_val = tuple(_ for i,_ in enumerate(shp_val) if i!=unroll_axis)
+		shp_partial_tgt = (slice(None),)*len(shp_tgt)
+		shp_partial_pts = (slice(None),)
+		result = np.empty((*shp_tgt, *shp_val))
+		if verbose:
+			print(axis_size, shp_val, shp_partial_val)
+		for i in range(axis_size):
+			partial_indexes = tuple(i if j==unroll_axis else slice(None) for j in range(len(shp_val)))
+			if verbose:
+				print(i, partial_indexes, shp_partial_tgt+partial_indexes, shp_partial_pts+partial_indexes)
+			result[shp_partial_tgt+partial_indexes] = base.interp(source_val[shp_partial_pts+partial_indexes]).reshape(*shp_tgt, *shp_partial_val)
+		return result

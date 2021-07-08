@@ -74,6 +74,32 @@ def test_n_dimensional():
 	assert max_error < 1e-1
 
 
+def test_unroll():
+	points_src = 100000
+	points_tgt = 1000
+	shp_val    = (2,3,4)
+	x,y,z = np.random.rand(3, points_src)
+	xi,yi,zi = np.random.rand(3, points_tgt)
+
+	data = np.repeat(np.hypot(x, z), np.prod(shp_val)).reshape(points_src, -1)
+	data_ref = np.repeat(np.hypot(xi, zi), np.prod(shp_val)).reshape(points_tgt, -1)
+	for i in range(np.prod(shp_val)):
+		data[:,i] += 1+i
+		data_ref[:,i] += 1+i
+	data = data.reshape(points_src, *shp_val)
+	data_ref = data_ref.reshape(points_tgt, *shp_val)
+
+	mesh_sce = np.stack((x, y, z), axis=-1)
+	mesh_tgt = np.stack((xi, yi, zi), axis=-1)
+	data_rolled = cloud2cloud(mesh_sce, data, mesh_tgt)
+
+	for i in range(len(shp_val)):
+		data_unrolled = cloud2cloud(mesh_sce, data, mesh_tgt, unroll_axis=i, verbose=True)
+		max_error = np.max(np.abs(data_rolled-data_unrolled))
+		assert data_unrolled.shape == (points_tgt, *shp_val)
+		assert max_error == 0
+
+
 def test_function():
 	SIZE_TEST= 20
 	NVAR = 100

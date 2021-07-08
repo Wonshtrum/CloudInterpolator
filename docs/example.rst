@@ -87,7 +87,9 @@ Finally we can visualize and compare the results.
 	plt.title("data_sce")
 	plt.show()
 
-![data_sce](images/data_sce.png)
+.. image:: images/data_sce.png
+	:scale: 40
+	:align: center 
 
 .. code-block:: python
 
